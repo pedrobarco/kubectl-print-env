@@ -21,8 +21,12 @@ func RootCmd() *cobra.Command {
 		Long:          `.`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			err := viper.BindPFlags(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("TBD")
