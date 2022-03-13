@@ -1,0 +1,33 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: kubectl-env
+    main: ./cmd/kubectl-env
+    binary: kubectl-env
+    goos:
+      - linux
+    ldflags:
+      - -w -s
+      - -X kubectl-env/internal/version.version={{ trimprefix .Version "v" }}
+      - -X kubectl-env/internal/version.gitCommit={{ .Commit }}
+    env:
+      - GO386=softfloat
+      - CGO_ENABLE=0
+nfpms:
+  - homepage: https://github.com/pedrobarco/kubectl-env
+    description: kubectl-env is a kubectl plugin that builds config files from k8s environments
+    maintainer: Pedro Barco <pedro.barco@tecnico.ulisboa.pt>
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
