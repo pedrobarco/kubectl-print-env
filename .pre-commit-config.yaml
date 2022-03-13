@@ -16,6 +16,14 @@ repos:
   - id: golangci-lint-mod
   - id: go-fmt
 
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.1.0
+  hooks:
+    - id: check-yaml
+      stages: [commit]
+    - id: check-json
+      stages: [commit]
+
 - repo: https://github.com/commitizen-tools/commitizen
   rev: v2.17.13
   hooks:
