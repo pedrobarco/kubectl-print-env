@@ -29,6 +29,7 @@ func (c *client) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
 
 func (c *client) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
 	out := []v1.EnvVar{}
+
 	for _, efs := range env {
 		if cmes := efs.ConfigMapRef; cmes != nil {
 			out = append(out, c.fromConfigMapRef(cmes)...)
@@ -37,5 +38,6 @@ func (c *client) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
 			out = append(out, c.fromSecretRef(ses)...)
 		}
 	}
+
 	return out
 }

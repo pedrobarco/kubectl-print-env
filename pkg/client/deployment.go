@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,7 +16,7 @@ func (c *client) getDeployment(name string) (*appsv1.Deployment, error) {
 	return deploy, nil
 }
 
-func (c *client) FromDeployment(name string) []corev1.EnvVar {
+func (c *client) FromDeployment(name string) []v1.EnvVar {
 	out := []v1.EnvVar{}
 
 	d, err := c.getDeployment(name)
