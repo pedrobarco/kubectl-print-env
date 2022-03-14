@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pedrobarco/kubectl-env/pkg/client"
+	"github.com/pedrobarco/kubectl-env/pkg/printer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -21,6 +23,7 @@ func RootCmd() *cobra.Command {
 		Long:          `.`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		Args:          cobra.RangeArgs(1, 2),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			err := viper.BindPFlags(cmd.Flags())
 			if err != nil {
@@ -29,7 +32,14 @@ func RootCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("TBD")
+			c, err := client.CreateClient(KubernetesConfigFlags)
+			if err != nil {
+				return fmt.Errorf("error creating client: %w", err)
+			}
+
+			env := c.FromDeployment(args[0])
+			fmt.Println(printer.Print(env, printer.DotEnv))
+
 			return nil
 		},
 	}
