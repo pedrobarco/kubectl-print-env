@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	cli.InitAndExecute()
+	c := cli.NewCmdEnv()
+	_ = c.Execute()
 }
