@@ -8,6 +8,7 @@ import (
 	"github.com/pedrobarco/kubectl-env/pkg/client"
 	"github.com/pedrobarco/kubectl-env/pkg/printer"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 )
@@ -18,6 +19,7 @@ type Options struct {
 	builder   *resource.Builder
 	flags     *genericclioptions.ConfigFlags
 	out       io.Writer
+	client    *client.Client
 }
 
 func CheckErr(err error) {
@@ -39,6 +41,7 @@ func NewCmdEnv() *cobra.Command {
 		Args:          cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			CheckErr(o.Complete(f, cmd, args))
+			CheckErr(o.Validate())
 			CheckErr(o.Run())
 		},
 	}
@@ -53,21 +56,53 @@ func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command,
 		return err
 	}
 
-	o.namespace = ns
-	o.args = args
-	o.flags = f
-	o.builder = resource.NewBuilder(f)
-	return nil
-}
-
-func (o *Options) Run() error {
-	c, err := client.CreateClient(o.flags)
+	c, err := client.CreateClient(f)
 	if err != nil {
 		return fmt.Errorf("error creating client: %w", err)
 	}
 
-	env := c.FromDeployment(o.args[0])
-	fmt.Println(printer.Print(env, printer.DotEnv))
-
+	o.namespace = ns
+	o.args = args
+	o.flags = f
+	o.builder = resource.NewBuilder(f)
+	o.client = c
 	return nil
+}
+
+func (o *Options) Validate() error {
+	return nil
+}
+
+func (o *Options) Run() error {
+	result := o.builder.Unstructured().
+		NamespaceParam(o.namespace).
+		DefaultNamespace().
+		ResourceTypeOrNameArgs(true, o.args...).
+		Latest().
+		Do()
+
+	if err := result.Err(); err != nil {
+		return err
+	}
+
+	return result.Visit(func(info *resource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+
+		var env []v1.EnvVar
+		switch info.Mapping.GroupVersionKind.Kind {
+		case "Deployment":
+			env = o.client.FromDeployment(info.Name)
+		case "ConfigMap":
+			env = o.client.FromConfigMap(info.Name)
+		case "Secret":
+			env = o.client.FromSecret(info.Name)
+		default:
+			env = nil
+		}
+
+		fmt.Println(printer.Print(env, printer.DotEnv))
+		return nil
+	})
 }

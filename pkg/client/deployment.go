@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *client) getDeployment(name string) (*appsv1.Deployment, error) {
+func (c *Client) getDeployment(name string) (*appsv1.Deployment, error) {
 	deploy, err := c.Clientset.AppsV1().Deployments(c.Namespace).Get(c.Context, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment: %w", err)
@@ -16,7 +16,7 @@ func (c *client) getDeployment(name string) (*appsv1.Deployment, error) {
 	return deploy, nil
 }
 
-func (c *client) FromDeployment(name string) []v1.EnvVar {
+func (c *Client) FromDeployment(name string) []v1.EnvVar {
 	out := []v1.EnvVar{}
 
 	d, err := c.getDeployment(name)
