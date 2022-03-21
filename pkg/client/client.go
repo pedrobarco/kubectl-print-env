@@ -10,14 +10,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type client struct {
+type Client struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 	Clientset   *kubernetes.Clientset
 	Context     context.Context
 	Namespace   string
 }
 
-func CreateClient(configFlags *genericclioptions.ConfigFlags) (*client, error) {
+func CreateClient(configFlags *genericclioptions.ConfigFlags) (*Client, error) {
 	config, err := configFlags.ToRESTConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
@@ -33,5 +33,5 @@ func CreateClient(configFlags *genericclioptions.ConfigFlags) (*client, error) {
 		ns = metav1.NamespaceDefault
 	}
 
-	return &client{ConfigFlags: configFlags, Clientset: clientset, Context: context.Background(), Namespace: ns}, nil
+	return &Client{ConfigFlags: configFlags, Clientset: clientset, Context: context.Background(), Namespace: ns}, nil
 }

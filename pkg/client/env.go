@@ -2,7 +2,7 @@ package client
 
 import v1 "k8s.io/api/core/v1"
 
-func (c *client) fromEnv(env []v1.EnvVar) []v1.EnvVar {
+func (c *Client) fromEnv(env []v1.EnvVar) []v1.EnvVar {
 	out := []v1.EnvVar{}
 	for _, ev := range env {
 		k := ev.Name
@@ -17,7 +17,7 @@ func (c *client) fromEnv(env []v1.EnvVar) []v1.EnvVar {
 	return out
 }
 
-func (c *client) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
+func (c *Client) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
 	if cmks := evs.ConfigMapKeyRef; cmks != nil {
 		return c.fromConfigMapKeyRef(cmks)
 	}
@@ -27,7 +27,7 @@ func (c *client) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
 	return v1.EnvVar{}
 }
 
-func (c *client) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
+func (c *Client) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
 	out := []v1.EnvVar{}
 
 	for _, efs := range env {

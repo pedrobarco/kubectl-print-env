@@ -2,64 +2,107 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"strings"
 
 	"github.com/pedrobarco/kubectl-env/pkg/client"
 	"github.com/pedrobarco/kubectl-env/pkg/printer"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 )
 
-var (
-	KubernetesConfigFlags *genericclioptions.ConfigFlags
-)
+type Options struct {
+	namespace string
+	args      []string
+	builder   *resource.Builder
+	flags     *genericclioptions.ConfigFlags
+	out       io.Writer
+	client    *client.Client
+}
 
-func RootCmd() *cobra.Command {
+func CheckErr(err error) {
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func NewCmdEnv() *cobra.Command {
+	o := Options{out: os.Stdout}
+	f := genericclioptions.NewConfigFlags(true)
 	cmd := &cobra.Command{
-		Use:           "kubectl-env",
+		Use:           "kubectl env TYPE[.VERSION][.GROUP] NAME",
 		Short:         "",
 		Long:          `.`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Args:          cobra.RangeArgs(1, 2),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			err := viper.BindPFlags(cmd.Flags())
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			c, err := client.CreateClient(KubernetesConfigFlags)
-			if err != nil {
-				return fmt.Errorf("error creating client: %w", err)
-			}
-
-			env := c.FromDeployment(args[0])
-			fmt.Println(printer.Print(env, printer.DotEnv))
-
-			return nil
+		Run: func(cmd *cobra.Command, args []string) {
+			CheckErr(o.Complete(f, cmd, args))
+			CheckErr(o.Validate())
+			CheckErr(o.Run())
 		},
 	}
-
-	cobra.OnInitialize(initConfig)
-
-	KubernetesConfigFlags = genericclioptions.NewConfigFlags(false)
-	KubernetesConfigFlags.AddFlags(cmd.Flags())
-
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	flags := cmd.Flags()
+	f.AddFlags(flags)
 	return cmd
 }
 
-func initConfig() {
-	viper.AutomaticEnv()
+func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
+	ns, _, err := f.ToRawKubeConfigLoader().Namespace()
+	if err != nil {
+		return err
+	}
+
+	c, err := client.CreateClient(f)
+	if err != nil {
+		return fmt.Errorf("error creating client: %w", err)
+	}
+
+	o.namespace = ns
+	o.args = args
+	o.flags = f
+	o.builder = resource.NewBuilder(f)
+	o.client = c
+	return nil
 }
 
-func InitAndExecute() {
-	if err := RootCmd().Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func (o *Options) Validate() error {
+	return nil
+}
+
+func (o *Options) Run() error {
+	result := o.builder.Unstructured().
+		NamespaceParam(o.namespace).
+		DefaultNamespace().
+		ResourceTypeOrNameArgs(true, o.args...).
+		Latest().
+		Do()
+
+	if err := result.Err(); err != nil {
+		return err
 	}
+
+	return result.Visit(func(info *resource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+
+		var env []v1.EnvVar
+		switch info.Mapping.GroupVersionKind.Kind {
+		case "Deployment":
+			env = o.client.FromDeployment(info.Name)
+		case "ConfigMap":
+			env = o.client.FromConfigMap(info.Name)
+		case "Secret":
+			env = o.client.FromSecret(info.Name)
+		default:
+			env = nil
+		}
+
+		fmt.Println(printer.Print(env, printer.DotEnv))
+		return nil
+	})
 }
