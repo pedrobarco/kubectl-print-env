@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pedrobarco/kubectl-env/pkg/client"
+	"github.com/pedrobarco/kubectl-env/pkg/parser"
 	"github.com/pedrobarco/kubectl-env/pkg/printer"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
@@ -19,7 +19,7 @@ type Options struct {
 	builder   *resource.Builder
 	flags     *genericclioptions.ConfigFlags
 	out       io.Writer
-	client    *client.Client
+	parser    *parser.Parser
 }
 
 func CheckErr(err error) {
@@ -56,7 +56,7 @@ func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command,
 		return err
 	}
 
-	c, err := client.CreateClient(f)
+	p, err := parser.CreateParser(f)
 	if err != nil {
 		return fmt.Errorf("error creating client: %w", err)
 	}
@@ -65,7 +65,7 @@ func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command,
 	o.args = args
 	o.flags = f
 	o.builder = resource.NewBuilder(f)
-	o.client = c
+	o.parser = p
 	return nil
 }
 
@@ -93,11 +93,15 @@ func (o *Options) Run() error {
 		var env []v1.EnvVar
 		switch info.Mapping.GroupVersionKind.Kind {
 		case "Deployment":
-			env = o.client.FromDeployment(info.Name)
+			env = o.parser.FromDeployment(info.Name)
 		case "ConfigMap":
-			env = o.client.FromConfigMap(info.Name)
+			env = o.parser.FromConfigMap(info.Name)
 		case "Secret":
-			env = o.client.FromSecret(info.Name)
+			env = o.parser.FromSecret(info.Name)
+		case "Job":
+			env = o.parser.FromJob(info.Name)
+		case "Pod":
+			env = o.parser.FromPod(info.Name)
 		default:
 			env = nil
 		}

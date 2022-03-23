@@ -1,14 +1,14 @@
-package client
+package parser
 
 import v1 "k8s.io/api/core/v1"
 
-func (c *Client) fromEnv(env []v1.EnvVar) []v1.EnvVar {
+func (p *Parser) fromEnv(env []v1.EnvVar) []v1.EnvVar {
 	out := []v1.EnvVar{}
 	for _, ev := range env {
 		k := ev.Name
 		var v string
 		if evs := ev.ValueFrom; evs != nil {
-			v = c.fromValueFrom(evs).Value
+			v = p.fromValueFrom(evs).Value
 		} else {
 			v = ev.Value
 		}
@@ -17,25 +17,25 @@ func (c *Client) fromEnv(env []v1.EnvVar) []v1.EnvVar {
 	return out
 }
 
-func (c *Client) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
+func (p *Parser) fromValueFrom(evs *v1.EnvVarSource) v1.EnvVar {
 	if cmks := evs.ConfigMapKeyRef; cmks != nil {
-		return c.fromConfigMapKeyRef(cmks)
+		return p.fromConfigMapKeyRef(cmks)
 	}
 	if sks := evs.SecretKeyRef; sks != nil {
-		return c.fromSecretKeyRef(sks)
+		return p.fromSecretKeyRef(sks)
 	}
 	return v1.EnvVar{}
 }
 
-func (c *Client) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
+func (p *Parser) fromEnvFrom(env []v1.EnvFromSource) []v1.EnvVar {
 	out := []v1.EnvVar{}
 
 	for _, efs := range env {
 		if cmes := efs.ConfigMapRef; cmes != nil {
-			out = append(out, c.fromConfigMapRef(cmes)...)
+			out = append(out, p.fromConfigMapRef(cmes)...)
 		}
 		if ses := efs.SecretRef; ses != nil {
-			out = append(out, c.fromSecretRef(ses)...)
+			out = append(out, p.fromSecretRef(ses)...)
 		}
 	}
 
