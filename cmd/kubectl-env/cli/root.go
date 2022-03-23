@@ -100,6 +100,8 @@ func (o *Options) Run() error {
 			env = o.parser.FromSecret(info.Name)
 		case "Job":
 			env = o.parser.FromJob(info.Name)
+		case "Pod":
+			env = o.parser.FromPod(info.Name)
 		default:
 			env = nil
 		}
