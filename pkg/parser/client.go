@@ -1,4 +1,4 @@
-package client
+package parser
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Client struct {
+type Parser struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 	Clientset   *kubernetes.Clientset
 	Context     context.Context
 	Namespace   string
 }
 
-func CreateClient(configFlags *genericclioptions.ConfigFlags) (*Client, error) {
+func CreateParser(configFlags *genericclioptions.ConfigFlags) (*Parser, error) {
 	config, err := configFlags.ToRESTConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
@@ -25,7 +25,7 @@ func CreateClient(configFlags *genericclioptions.ConfigFlags) (*Client, error) {
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create clientset: %w", err)
+		return nil, fmt.Errorf("failed to create Parserset: %w", err)
 	}
 
 	ns := *configFlags.Namespace
@@ -33,5 +33,5 @@ func CreateClient(configFlags *genericclioptions.ConfigFlags) (*Client, error) {
 		ns = metav1.NamespaceDefault
 	}
 
-	return &Client{ConfigFlags: configFlags, Clientset: clientset, Context: context.Background(), Namespace: ns}, nil
+	return &Parser{ConfigFlags: configFlags, Clientset: clientset, Context: context.Background(), Namespace: ns}, nil
 }

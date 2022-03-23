@@ -1,4 +1,4 @@
-package client
+package parser
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Client) getSecret(name string) (*v1.Secret, error) {
-	s, err := c.Clientset.CoreV1().Secrets(c.Namespace).Get(c.Context, name, metav1.GetOptions{})
+func (p *Parser) getSecret(name string) (*v1.Secret, error) {
+	s, err := p.Clientset.CoreV1().Secrets(p.Namespace).Get(p.Context, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -16,12 +16,12 @@ func (c *Client) getSecret(name string) (*v1.Secret, error) {
 	return s, nil
 }
 
-func (c *Client) fromSecretRef(sks *v1.SecretEnvSource) []v1.EnvVar {
-	return c.FromSecret(sks.Name)
+func (p *Parser) fromSecretRef(sks *v1.SecretEnvSource) []v1.EnvVar {
+	return p.FromSecret(sks.Name)
 }
 
-func (c *Client) fromSecretKeyRef(sks *v1.SecretKeySelector) v1.EnvVar {
-	s, err := c.getSecret(sks.Name)
+func (p *Parser) fromSecretKeyRef(sks *v1.SecretKeySelector) v1.EnvVar {
+	s, err := p.getSecret(sks.Name)
 	if err != nil {
 		return v1.EnvVar{}
 	}
@@ -29,10 +29,10 @@ func (c *Client) fromSecretKeyRef(sks *v1.SecretKeySelector) v1.EnvVar {
 	return v1.EnvVar{Name: s.Name, Value: string(s.Data[sks.Key])}
 }
 
-func (c *Client) FromSecret(name string) []v1.EnvVar {
+func (p *Parser) FromSecret(name string) []v1.EnvVar {
 	out := []v1.EnvVar{}
 
-	s, err := c.getSecret(name)
+	s, err := p.getSecret(name)
 	if err != nil {
 		return out
 	}
