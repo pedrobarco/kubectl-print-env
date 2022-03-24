@@ -3,6 +3,7 @@ package env
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pedrobarco/kubectl-env/pkg/parser"
 	"github.com/pedrobarco/kubectl-env/pkg/printers"
@@ -10,6 +11,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/kubectl/pkg/util/i18n"
+	"k8s.io/kubectl/pkg/util/templates"
 )
 
 type EnvOptions struct {
@@ -23,6 +26,28 @@ type EnvOptions struct {
 	parser  *parser.Parser
 }
 
+var (
+	envLong = templates.LongDesc(i18n.T(`
+		Build config files from k8s environments.
+
+		Prints a config file by parsing environment information about the
+		specified resources.
+		You can select the output format using the --output flag.`))
+
+	envExample = templates.Examples(i18n.T(`
+		# Build a dotenv config file from a pod
+		kubectl env pods my-pod
+
+		# Build a JSON config file from a deployment, in the "v1" version of the "apps" API group
+		kubectl env deployments.v1.apps my-deployment -o json
+
+		# Build a YAML config file from a configmap
+		kubectl env cm/my-configmap -o yaml
+
+		# Build a TOML config file from a secret, decoding secret values
+		kubectl env secret my-secret -o toml`))
+)
+
 func CheckErr(err error) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -35,9 +60,10 @@ func NewCmdEnv() *cobra.Command {
 	f := genericclioptions.NewConfigFlags(true)
 
 	cmd := &cobra.Command{
-		Use:          "kubectl env [(-o|--output=)dotenv|json|yaml|toml] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)",
-		Short:        "",
-		Long:         "",
+		Use:          fmt.Sprintf("kubectl env [(-o|--output=)%s] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)", strings.Join(o.formatFlags.AllowedFormats(), "|")),
+		Short:        i18n.T("Build config files from k8s environments"),
+		Long:         envLong,
+		Example:      envExample,
 		SilenceUsage: true,
 		Args:         cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -49,7 +75,7 @@ func NewCmdEnv() *cobra.Command {
 
 	flags := cmd.Flags()
 	f.AddFlags(flags)
-	cmd.Flags().VarP(o.formatFlags, "output", "o", "Output format. One of: dotenv|json|yaml|toml")
+	cmd.Flags().VarP(o.formatFlags, "output", "o", fmt.Sprintf("Output format. One of: %s", strings.Join(o.formatFlags.AllowedFormats(), "|")))
 	return cmd
 }
 
