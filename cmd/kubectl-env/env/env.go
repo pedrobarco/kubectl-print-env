@@ -1,25 +1,26 @@
-package cli
+package env
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/pedrobarco/kubectl-env/pkg/parser"
-	"github.com/pedrobarco/kubectl-env/pkg/printer"
+	"github.com/pedrobarco/kubectl-env/pkg/printers"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
-type Options struct {
-	namespace string
+type EnvOptions struct {
+	formatFlags *FormatFlags
+	configFlags *genericclioptions.ConfigFlags
+
 	args      []string
-	builder   *resource.Builder
-	flags     *genericclioptions.ConfigFlags
-	out       io.Writer
-	parser    *parser.Parser
+	namespace string
+
+	builder *resource.Builder
+	parser  *parser.Parser
 }
 
 func CheckErr(err error) {
@@ -30,27 +31,29 @@ func CheckErr(err error) {
 }
 
 func NewCmdEnv() *cobra.Command {
-	o := Options{out: os.Stdout}
+	o := &EnvOptions{formatFlags: &FormatFlags{Format: printers.DotEnv}}
 	f := genericclioptions.NewConfigFlags(true)
+
 	cmd := &cobra.Command{
-		Use:           "kubectl env TYPE[.VERSION][.GROUP] NAME",
-		Short:         "",
-		Long:          `.`,
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		Args:          cobra.RangeArgs(1, 2),
+		Use:          "kubectl env [(-o|--output=)dotenv|json|yaml|toml] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)",
+		Short:        "",
+		Long:         "",
+		SilenceUsage: true,
+		Args:         cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			CheckErr(o.Complete(f, cmd, args))
 			CheckErr(o.Validate())
 			CheckErr(o.Run())
 		},
 	}
+
 	flags := cmd.Flags()
 	f.AddFlags(flags)
+	cmd.Flags().VarP(o.formatFlags, "output", "o", "Output format. One of: dotenv|json|yaml|toml")
 	return cmd
 }
 
-func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
+func (o *EnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
 	ns, _, err := f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
@@ -62,18 +65,18 @@ func (o *Options) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command,
 	}
 
 	o.namespace = ns
-	o.args = args
-	o.flags = f
-	o.builder = resource.NewBuilder(f)
 	o.parser = p
+	o.args = args
+	o.configFlags = f
+	o.builder = resource.NewBuilder(f)
 	return nil
 }
 
-func (o *Options) Validate() error {
+func (o *EnvOptions) Validate() error {
 	return nil
 }
 
-func (o *Options) Run() error {
+func (o *EnvOptions) Run() error {
 	result := o.builder.Unstructured().
 		NamespaceParam(o.namespace).
 		DefaultNamespace().
@@ -106,7 +109,7 @@ func (o *Options) Run() error {
 			env = nil
 		}
 
-		fmt.Println(printer.Print(env, printer.DotEnv))
+		fmt.Println(printers.Print(env, o.formatFlags.Format))
 		return nil
 	})
 }
