@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pedrobarco/kubectl-env/pkg/printers"
@@ -10,6 +11,12 @@ import (
 type FormatFlags struct {
 	Value  string
 	Format printers.Format
+}
+
+func (o *FormatFlags) AllowedFormats() []string {
+	formats := []string{"dotenv", "json", "yaml", "toml"}
+	sort.Strings(formats)
+	return formats
 }
 
 func (o FormatFlags) String() string {
