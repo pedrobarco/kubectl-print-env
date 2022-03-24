@@ -75,7 +75,7 @@ func NewCmdEnv() *cobra.Command {
 
 	flags := cmd.Flags()
 	f.AddFlags(flags)
-	cmd.Flags().VarP(o.formatFlags, "output", "o", "Output format. One of: dotenv|json|yaml|toml")
+	cmd.Flags().VarP(o.formatFlags, "output", "o", fmt.Sprintf("Output format. One of: %s", strings.Join(o.formatFlags.AllowedFormats(), "|")))
 	return cmd
 }
 
