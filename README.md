@@ -13,7 +13,7 @@ flag.
 `kubectl-print-env` can be installed using [Krew](https://krew.sigs.k8s.io):
 
 ```bash
-$ kubectl krew install env
+$ kubectl krew install print-env
 ```
 
 or by downloading the binary from the [releases](https://github.com/pedrobarco/kubectl-print-env/releases) page.
