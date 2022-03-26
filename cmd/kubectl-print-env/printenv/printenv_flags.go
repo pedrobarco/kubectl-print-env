@@ -1,11 +1,11 @@
-package env
+package printenv
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/pedrobarco/kubectl-env/pkg/printers"
+	"github.com/pedrobarco/kubectl-print-env/pkg/printers"
 )
 
 type FormatFlags struct {

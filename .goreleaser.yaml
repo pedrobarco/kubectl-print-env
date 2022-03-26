@@ -2,17 +2,17 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - id: kubectl-env
-    main: ./cmd/kubectl-env
-    binary: kubectl-env
+  - id: kubectl-print-env
+    main: ./cmd/kubectl-print-env
+    binary: kubectl-print-env
     goos:
       - darwin
       - linux
       - windows
     ldflags:
       - -w -s
-      - -X kubectl-env/internal/version.version={{ trimprefix .Version "v" }}
-      - -X kubectl-env/internal/version.gitCommit={{ .Commit }}
+      - -X kubectl-print-env/internal/version.version={{ trimprefix .Version "v" }}
+      - -X kubectl-print-env/internal/version.gitCommit={{ .Commit }}
     env:
       - CGO_ENABLE=0
 archives:
@@ -25,10 +25,10 @@ archives:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{ .Version }}-next"
 nfpms:
-  - homepage: https://github.com/pedrobarco/kubectl-env
-    description: kubectl-env is a kubectl plugin that builds config files from k8s environments
+  - homepage: https://github.com/pedrobarco/kubectl-print-env
+    description: kubectl-print-env is a kubectl plugin that builds config files from k8s environments
     maintainer: Pedro Barco <pedro.barco@tecnico.ulisboa.pt>
     license: MIT
     formats:
@@ -42,10 +42,10 @@ changelog:
       - '^docs:'
       - '^test:'
 krews:
-  - name: env
+  - name: print-env
     index:
       owner: pedrobarco
-      name: kubectl-env
+      name: kubectl-print-env
     commit_author:
       name: Pedro Barco
       email: pedro.barco@tecnico.ulisboa.pt
