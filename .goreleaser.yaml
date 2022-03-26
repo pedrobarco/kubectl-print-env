@@ -1,5 +1,3 @@
-env:
-  - GO111MODULE=on
 before:
   hooks:
     - go mod tidy
@@ -8,14 +6,26 @@ builds:
     main: ./cmd/kubectl-env
     binary: kubectl-env
     goos:
+      - darwin
       - linux
+      - windows
     ldflags:
       - -w -s
       - -X kubectl-env/internal/version.version={{ trimprefix .Version "v" }}
       - -X kubectl-env/internal/version.gitCommit={{ .Commit }}
     env:
-      - GO386=softfloat
       - CGO_ENABLE=0
+archives:
+  - files:
+      - LICENSE
+      - README.md
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: checksums.txt
+snapshot:
+  name_template: "{{ .Tag }}-next"
 nfpms:
   - homepage: https://github.com/pedrobarco/kubectl-env
     description: kubectl-env is a kubectl plugin that builds config files from k8s environments
@@ -31,3 +41,18 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+krews:
+  - name: env
+    index:
+      owner: pedrobarco
+      name: kubectl-env
+    commit_author:
+      name: Pedro Barco
+      email: pedro.barco@tecnico.ulisboa.pt
+    homepage: https://github.com/pedrobarco/kubetl-env
+    commit_msg_template: "build: update krew plugin to {{ .Tag }}"
+    short_description: Build config files from k8s environments.
+    description: |
+      Prints a config file by parsing environment information about the specified
+      resources. You can select the output format using the --output flag.
+    skip_upload: true
