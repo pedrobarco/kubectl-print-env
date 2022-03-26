@@ -1,6 +1,6 @@
 BINDIR      := $(CURDIR)/bin
 INSTALL_PATH ?= /usr/local/bin
-BINNAME     ?= kubectl-env
+BINNAME     ?= kubectl-print-env
 
 GOBIN         = $(shell go env GOBIN)
 ifeq ($(GOBIN),)
@@ -35,9 +35,9 @@ ifdef VERSION
 endif
 BINARY_VERSION ?= $(GIT_TAG)
 
-LDFLAGS += -X kubectl-env/internal/version.version=$(BINARY_VERSION)
-LDFLAGS += -X kubectl-env/internal/version.metadata=$(VERSION_METADATA)
-LDFLAGS += -X kubectl-env/internal/version.gitCommit=$(GIT_COMMIT)
+LDFLAGS += -X kubectl-print-env/internal/version.version=$(BINARY_VERSION)
+LDFLAGS += -X kubectl-print-env/internal/version.metadata=$(VERSION_METADATA)
+LDFLAGS += -X kubectl-print-env/internal/version.gitCommit=$(GIT_COMMIT)
 LDFLAGS += $(EXT_LDFLAGS)
 
 .PHONY: all
@@ -50,7 +50,7 @@ all: build
 build: $(BINDIR)/$(BINNAME)
 
 $(BINDIR)/$(BINNAME): $(SRC)
-	GO111MODULE=on go build $(GOFLAGS) -trimpath -tags '$(TAGS)' -ldflags '$(LDFLAGS)' -o '$(BINDIR)/$(BINNAME)' ./cmd/kubectl-env
+	GO111MODULE=on go build $(GOFLAGS) -trimpath -tags '$(TAGS)' -ldflags '$(LDFLAGS)' -o '$(BINDIR)/$(BINNAME)' ./cmd/kubectl-print-env
 
 # ------------------------------------------------------------------------------
 #  install

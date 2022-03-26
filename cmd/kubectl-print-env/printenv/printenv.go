@@ -1,12 +1,12 @@
-package env
+package printenv
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/pedrobarco/kubectl-env/pkg/parser"
-	"github.com/pedrobarco/kubectl-env/pkg/printers"
+	"github.com/pedrobarco/kubectl-print-env/pkg/parser"
+	"github.com/pedrobarco/kubectl-print-env/pkg/printers"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -15,7 +15,7 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
-type EnvOptions struct {
+type PrintEnvOptions struct {
 	formatFlags *FormatFlags
 	configFlags *genericclioptions.ConfigFlags
 
@@ -36,16 +36,16 @@ var (
 
 	envExample = templates.Examples(i18n.T(`
 		# Build a dotenv config file from a pod
-		kubectl env pods my-pod
+		kubectl print-env pods my-pod
 
 		# Build a JSON config file from a deployment, in the "v1" version of the "apps" API group
-		kubectl env deployments.v1.apps my-deployment -o json
+		kubectl print-env deployments.v1.apps my-deployment -o json
 
 		# Build a YAML config file from a configmap
-		kubectl env cm/my-configmap -o yaml
+		kubectl print-env cm/my-configmap -o yaml
 
 		# Build a TOML config file from a secret, decoding secret values
-		kubectl env secret my-secret -o toml`))
+		kubectl print-env secret my-secret -o toml`))
 )
 
 func CheckErr(err error) {
@@ -56,11 +56,11 @@ func CheckErr(err error) {
 }
 
 func NewCmdEnv() *cobra.Command {
-	o := &EnvOptions{formatFlags: &FormatFlags{Format: printers.DotEnv}}
+	o := &PrintEnvOptions{formatFlags: &FormatFlags{Format: printers.DotEnv}}
 	f := genericclioptions.NewConfigFlags(true)
 
 	cmd := &cobra.Command{
-		Use:          fmt.Sprintf("kubectl env [(-o|--output=)%s] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)", strings.Join(o.formatFlags.AllowedFormats(), "|")),
+		Use:          fmt.Sprintf("kubectl print-env [(-o|--output=)%s] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)", strings.Join(o.formatFlags.AllowedFormats(), "|")),
 		Short:        i18n.T("Build config files from k8s environments"),
 		Long:         envLong,
 		Example:      envExample,
@@ -79,7 +79,7 @@ func NewCmdEnv() *cobra.Command {
 	return cmd
 }
 
-func (o *EnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
+func (o *PrintEnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
 	ns, _, err := f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
@@ -98,11 +98,11 @@ func (o *EnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Comma
 	return nil
 }
 
-func (o *EnvOptions) Validate() error {
+func (o *PrintEnvOptions) Validate() error {
 	return nil
 }
 
-func (o *EnvOptions) Run() error {
+func (o *PrintEnvOptions) Run() error {
 	result := o.builder.Unstructured().
 		NamespaceParam(o.namespace).
 		DefaultNamespace().

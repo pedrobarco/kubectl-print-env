@@ -1,4 +1,4 @@
-module github.com/pedrobarco/kubectl-env
+module github.com/pedrobarco/kubectl-print-env
 
 go 1.17
 
