@@ -85,7 +85,7 @@ func (o *PrintEnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.
 		return err
 	}
 
-	p, err := parser.CreateParser(f)
+	p, err := parser.CreateParser(ns, f)
 	if err != nil {
 		return fmt.Errorf("error creating client: %w", err)
 	}
@@ -103,13 +103,8 @@ func (o *PrintEnvOptions) Validate() error {
 }
 
 func (o *PrintEnvOptions) Run() error {
-	result := o.builder.Unstructured().
-		NamespaceParam(o.namespace).
-		DefaultNamespace().
-		ResourceTypeOrNameArgs(true, o.args...).
-		Latest().
-		Do()
-
+	result := o.builder.Unstructured().NamespaceParam(o.namespace).
+		ResourceTypeOrNameArgs(false, o.args...).Latest().Do()
 	if err := result.Err(); err != nil {
 		return err
 	}
