@@ -4,7 +4,7 @@ BINNAME     ?= kubectl-print-env
 
 GOBIN         = $(shell go env GOBIN)
 ifeq ($(GOBIN),)
-GOBIN         = $(shell go env GOPATH)/bin
+	GOBIN         = $(shell go env GOPATH)/bin
 endif
 ARCH          = $(shell uname -p)
 
@@ -22,21 +22,29 @@ SRC := $(shell find . -type f -name '*.go' -print) go.mod go.sum
 # Required for globs to work correctly
 SHELL      = /usr/bin/env bash
 
-GIT_COMMIT = $(shell git rev-parse HEAD)
-GIT_SHA    = $(shell git rev-parse --short HEAD)
-GIT_TAG    = $(shell git describe | cut -c2-)
-GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
+GIT_COMMIT := $(shell git rev-parse HEAD)
+GIT_COMMIT_SHORT := $(shell git rev-parse --short HEAD)
+GIT_DIRTY  := $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
+GIT_TAGGED := $(shell test -n "`git describe --tags`" && echo "tagged" || echo "")
 
-VERSION_METADATA = unreleased
+VERSION_METADATA = $(GIT_STABLE)
+BINARY_VERSION =
 
-ifdef VERSION
-	BINARY_VERSION = $(VERSION)
-	VERSION_METADATA =
+
+# Build the next version if not tagged
+ifeq ($(GIT_TAGGED), tagged)
+	BINARY_VERSION = $(shell git tag | sort -rV | head -n1)-next-$(GIT_COMMIT_SHORT)
+else
+	BINARY_VERSION = $(shell git tag --points-at | sort -rV | head -n1)
 endif
-BINARY_VERSION ?= $(GIT_TAG)
+
+# Build a snapshot if dirty
+ifeq ($(GIT_DIRTY), dirty)
+	BINARY_VERSION := $(BINARY_VERSION)-snapshot
+	VERSION_METADATA = -unreleased
+endif
 
 LDFLAGS += -X kubectl-print-env/internal/version.version=$(BINARY_VERSION)
-LDFLAGS += -X kubectl-print-env/internal/version.metadata=$(VERSION_METADATA)
 LDFLAGS += -X kubectl-print-env/internal/version.gitCommit=$(GIT_COMMIT)
 LDFLAGS += $(EXT_LDFLAGS)
 
@@ -88,7 +96,6 @@ clean:
 
 .PHONY: info
 info:
-	@echo "Version:           $(VERSION)"
-	@echo "Git Tag:           $(GIT_TAG)"
+	@echo "Version:           $(BINARY_VERSION)"
 	@echo "Git Commit:        $(GIT_COMMIT)"
 	@echo "Git Tree State:    $(GIT_DIRTY)"
