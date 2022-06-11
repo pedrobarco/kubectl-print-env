@@ -21,7 +21,7 @@ or by downloading the binary from the [releases](https://github.com/pedrobarco/k
 Alternatively, `kubectl-print-env` can be installed by running
 
 ```bash
-$ go install github.com/pedrobarco/kubectl-print-env
+$ go install github.com/pedrobarco/kubectl-print-env/cmd/kubectl-print-env
 ```
 
 or by cloning this repository and running:
@@ -32,6 +32,10 @@ $ make build && sudo make install
 
 
 ## Usage
+
+When used as a kubectl plugin the command is `kubectl print-env`, and when
+used as a standalone executable it's `kubectl-print-env`.
+
 
 ```
 kubectl print-env [(-o|--output=)dotenv|json|toml|yaml] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME) [flags]
