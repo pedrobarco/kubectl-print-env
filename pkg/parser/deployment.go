@@ -25,7 +25,7 @@ func (p *Parser) FromDeployment(name string) []v1.EnvVar {
 	}
 
 	for _, ct := range d.Spec.Template.Spec.Containers {
-		out = append(out, p.fromEnv(ct.Env)...)
+		out = append(out, p.fromEnv(ct.Env, d)...)
 		out = append(out, p.fromEnvFrom(ct.EnvFrom)...)
 	}
 
