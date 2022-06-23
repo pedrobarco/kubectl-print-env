@@ -26,7 +26,7 @@ func (p *Parser) FromJob(name string) []v1.EnvVar {
 	}
 
 	for _, ct := range j.Spec.Template.Spec.Containers {
-		out = append(out, p.fromEnv(ct.Env)...)
+		out = append(out, p.fromEnv(ct.Env, j)...)
 		out = append(out, p.fromEnvFrom(ct.EnvFrom)...)
 	}
 
