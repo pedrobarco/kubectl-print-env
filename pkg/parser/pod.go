@@ -24,7 +24,7 @@ func (p *Parser) FromPod(name string) []v1.EnvVar {
 	}
 
 	for _, ct := range po.Spec.Containers {
-		out = append(out, p.fromEnv(ct.Env)...)
+		out = append(out, p.fromEnv(ct.Env, po)...)
 		out = append(out, p.fromEnvFrom(ct.EnvFrom)...)
 	}
 
