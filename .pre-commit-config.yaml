@@ -20,9 +20,9 @@ repos:
   rev: v4.1.0
   hooks:
     - id: check-yaml
-      stages: [commit]
+      stages: [pre-commit]
     - id: check-json
-      stages: [commit]
+      stages: [pre-commit]
 
 - repo: https://github.com/commitizen-tools/commitizen
   rev: v2.17.13

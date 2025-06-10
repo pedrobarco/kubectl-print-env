@@ -2,29 +2,16 @@ package printenv
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/pedrobarco/kubectl-print-env/pkg/parser"
 	"github.com/pedrobarco/kubectl-print-env/pkg/printers"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 )
-
-type PrintEnvOptions struct {
-	formatFlags *FormatFlags
-	configFlags *genericclioptions.ConfigFlags
-
-	args      []string
-	namespace string
-
-	builder *resource.Builder
-	parser  *parser.Parser
-}
 
 var (
 	envLong = templates.LongDesc(i18n.T(`
@@ -48,16 +35,25 @@ var (
 		kubectl print-env secret my-secret -o toml`))
 )
 
-func CheckErr(err error) {
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
+type PrintEnvOptions struct {
+	formatFlags *FormatFlags
+	configFlags *genericclioptions.ConfigFlags
+
+	args      []string
+	namespace string
+
+	parser *parser.Parser
+}
+
+func NewPrintEnvOptions() *PrintEnvOptions {
+	return &PrintEnvOptions{
+		configFlags: genericclioptions.NewConfigFlags(true),
+		formatFlags: &FormatFlags{Format: printers.DotEnv},
 	}
 }
 
 func NewCmdEnv() *cobra.Command {
-	o := &PrintEnvOptions{formatFlags: &FormatFlags{Format: printers.DotEnv}}
-	f := genericclioptions.NewConfigFlags(true)
+	o := NewPrintEnvOptions()
 
 	cmd := &cobra.Command{
 		Use:          i18n.T(fmt.Sprintf("kubectl print-env [(-o|--output=)%s] (TYPE[.VERSION][.GROUP] [NAME] | TYPE[.VERSION][.GROUP]/NAME)", strings.Join(o.formatFlags.AllowedFormats(), "|"))),
@@ -66,35 +62,40 @@ func NewCmdEnv() *cobra.Command {
 		Example:      envExample,
 		SilenceUsage: true,
 		Args:         cobra.RangeArgs(1, 2),
-		Run: func(cmd *cobra.Command, args []string) {
-			CheckErr(o.Complete(f, cmd, args))
-			CheckErr(o.Validate())
-			CheckErr(o.Run())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := o.Complete(cmd, args); err != nil {
+				return err
+			}
+			if err := o.Validate(); err != nil {
+				return err
+			}
+			if err := o.Run(); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 
-	flags := cmd.Flags()
-	f.AddFlags(flags)
 	cmd.Flags().VarP(o.formatFlags, "output", "o", fmt.Sprintf("Output format. One of: %s", strings.Join(o.formatFlags.AllowedFormats(), "|")))
+	o.configFlags.AddFlags(cmd.Flags())
+
 	return cmd
 }
 
-func (o *PrintEnvOptions) Complete(f *genericclioptions.ConfigFlags, cmd *cobra.Command, args []string) error {
-	ns, _, err := f.ToRawKubeConfigLoader().Namespace()
+func (o *PrintEnvOptions) Complete(cmd *cobra.Command, args []string) error {
+	ns, _, err := o.configFlags.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
 	}
 
-	p, err := parser.CreateParser(ns, f)
+	parser, err := parser.New(o.configFlags, ns)
 	if err != nil {
 		return fmt.Errorf("error creating client: %w", err)
 	}
 
-	o.namespace = ns
-	o.parser = p
 	o.args = args
-	o.configFlags = f
-	o.builder = resource.NewBuilder(f)
+	o.namespace = ns
+	o.parser = parser
 	return nil
 }
 
@@ -103,7 +104,7 @@ func (o *PrintEnvOptions) Validate() error {
 }
 
 func (o *PrintEnvOptions) Run() error {
-	result := o.builder.Unstructured().NamespaceParam(o.namespace).
+	result := resource.NewBuilder(o.configFlags).Unstructured().NamespaceParam(o.namespace).
 		ResourceTypeOrNameArgs(false, o.args...).Latest().Do()
 	if err := result.Err(); err != nil {
 		return err
@@ -114,20 +115,9 @@ func (o *PrintEnvOptions) Run() error {
 			return err
 		}
 
-		var env []v1.EnvVar
-		switch info.Mapping.GroupVersionKind.Kind {
-		case "Deployment":
-			env = o.parser.FromDeployment(info.Name)
-		case "ConfigMap":
-			env = o.parser.FromConfigMap(info.Name)
-		case "Secret":
-			env = o.parser.FromSecret(info.Name)
-		case "Job":
-			env = o.parser.FromJob(info.Name)
-		case "Pod":
-			env = o.parser.FromPod(info.Name)
-		default:
-			env = nil
+		env, err := o.parser.Parse(info.Mapping.GroupVersionKind.Kind, info.Name)
+		if err != nil {
+			return fmt.Errorf("error parsing %s %s: %w", info.Mapping.GroupVersionKind.Kind, info.Name, err)
 		}
 
 		fmt.Println(printers.Print(env, o.formatFlags.Format))
